@@ -3,404 +3,1035 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Airflow DAG - github_redhat_health_pipeline</title>
+    <title>Airflow DAG - Red Hat Health Pipeline</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #0f172a;
-            --surface-color: #1e293b;
-            --border-color: #334155;
+            --bg: #090d16;
+            --surface: rgba(19, 27, 46, 0.75);
+            --surface-card: #131d31;
+            --surface-hover: #1b2844;
+            --border: rgba(255, 255, 255, 0.08);
+            --border-highlight: rgba(56, 189, 248, 0.3);
             --text-primary: #f8fafc;
             --text-secondary: #94a3b8;
-            --success-color: #22c55e;
-            --success-bg: rgba(34, 197, 94, 0.15);
-            --running-color: #3b82f6;
-            --running-bg: rgba(59, 130, 246, 0.15);
-            --redhat-red: #ee0000;
+            --text-muted: #64748b;
+            --success: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.2);
+            --accent: #38bdf8;
+            --redhat: #ee0000;
+            --operator-python: #3b82f6;
+            --operator-bash: #8b5cf6;
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+            -webkit-font-smoothing: antialiased;
         }
 
         body {
-            background-color: var(--bg-color);
+            background-color: var(--bg);
+            background-image: 
+                radial-gradient(circle at 15% 15%, rgba(56, 189, 248, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 85% 85%, rgba(139, 92, 246, 0.05) 0%, transparent 40%);
             color: var(--text-primary);
-            padding: 24px;
+            padding: 16px;
             min-height: 100vh;
         }
 
-        .header {
+        @media (min-width: 768px) {
+            body { padding: 24px; }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Top Navigation Bar */
+        .top-nav {
             display: flex;
+            flex-wrap: wrap;
             justify-content: space-between;
             align-items: center;
-            background: var(--surface-color);
-            padding: 20px 24px;
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
-            margin-bottom: 24px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            gap: 12px;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
         }
 
-        .dag-title {
+        .brand-cluster {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 12px;
         }
 
-        .dag-badge {
-            background: var(--redhat-red);
-            color: white;
+        .brand-logo {
+            background: linear-gradient(135deg, #017cee 0%, #0056b3 100%);
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(1, 124, 238, 0.35);
+        }
+
+        .brand-logo svg {
+            width: 22px;
+            height: 22px;
+            fill: white;
+        }
+
+        .brand-text h1 {
+            font-size: 17px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+        }
+
+        .brand-text p {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .nav-switchers {
+            display: flex;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.04);
+            padding: 4px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .nav-btn {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: 6px;
+            text-decoration: none;
+            color: var(--text-secondary);
+            transition: all 0.2s ease;
+        }
+
+        .nav-btn.active {
+            background: #1e293b;
+            color: var(--accent);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+        }
+
+        .nav-btn:hover:not(.active) {
+            color: var(--text-primary);
+        }
+
+        /* DAG Header Card */
+        .dag-header-card {
+            background: var(--surface);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+        }
+
+        @media (min-width: 900px) {
+            .dag-header-card {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+        }
+
+        .dag-info-left {
+            margin-bottom: 16px;
+        }
+
+        @media (min-width: 900px) {
+            .dag-info-left { margin-bottom: 0; }
+        }
+
+        .dag-badge-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .badge-redhat {
+            background: rgba(238, 0, 0, 0.15);
+            color: #ff4d4d;
+            border: 1px solid rgba(238, 0, 0, 0.3);
             font-size: 11px;
             font-weight: 700;
-            padding: 4px 10px;
+            padding: 3px 9px;
             border-radius: 20px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
 
-        .dag-name {
-            font-size: 20px;
+        .badge-pulse {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--success-glow);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            font-size: 11px;
             font-weight: 700;
-            letter-spacing: -0.5px;
+            padding: 3px 9px;
+            border-radius: 20px;
         }
 
-        .dag-schedule {
+        .pulse-dot {
+            width: 7px;
+            height: 7px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: pulse-ring 1.8s infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        .dag-id {
+            font-size: 20px;
+            font-weight: 800;
+            letter-spacing: -0.4px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            word-break: break-all;
+        }
+
+        .dag-meta {
             font-size: 13px;
             color: var(--text-secondary);
-            margin-top: 4px;
-        }
-
-        .stats-bar {
+            margin-top: 6px;
             display: flex;
-            gap: 20px;
+            flex-wrap: wrap;
+            gap: 14px;
         }
 
-        .stat-card {
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid var(--border-color);
-            padding: 10px 18px;
-            border-radius: 8px;
-            text-align: right;
+        .dag-meta span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 14px;
+        }
+
+        @media (min-width: 768px) {
+            .stats-grid {
+                grid-template-columns: repeat(4, 1fr);
+                margin-top: 0;
+            }
+        }
+
+        .stat-box {
+            background: rgba(10, 16, 30, 0.7);
+            border: 1px solid var(--border);
+            padding: 12px 16px;
+            border-radius: 10px;
         }
 
         .stat-label {
             font-size: 11px;
-            color: var(--text-secondary);
             text-transform: uppercase;
+            font-weight: 600;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
         }
 
         .stat-value {
-            font-size: 16px;
-            font-weight: 700;
-            color: var(--success-color);
+            font-size: 18px;
+            font-weight: 800;
+            margin-top: 2px;
+            color: var(--text-primary);
         }
 
-        /* DAG Pipeline Graph Container */
-        .pipeline-container {
-            background: var(--surface-color);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 40px 24px;
-            margin-bottom: 24px;
-            overflow-x: auto;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        .stat-value.highlight {
+            color: var(--success);
         }
 
-        .pipeline-title {
-            font-size: 14px;
-            font-weight: 600;
+        /* Controls & View Modes */
+        .controls-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .view-switchers {
+            display: flex;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.04);
+            padding: 3px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .view-btn {
+            background: transparent;
+            border: none;
             color: var(--text-secondary);
-            margin-bottom: 28px;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .view-btn.active {
+            background: #1e293b;
+            color: var(--accent);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+        }
+
+        .info-pill {
+            font-size: 12px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Pipeline Visual Canvas */
+        .pipeline-card {
+            background: var(--surface);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 24px 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+        }
+
+        /* Horizontal Pipeline Flow (Desktop Default) */
+        .flow-container-horizontal {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 10px 4px 20px 4px;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(56, 189, 248, 0.3) transparent;
+        }
+
+        .flow-container-horizontal::-webkit-scrollbar {
+            height: 6px;
+        }
+        .flow-container-horizontal::-webkit-scrollbar-thumb {
+            background: rgba(56, 189, 248, 0.3);
+            border-radius: 6px;
+        }
+
+        .task-node-h {
+            background: var(--surface-card);
+            border: 1px solid rgba(16, 185, 129, 0.35);
+            border-radius: 10px;
+            padding: 14px 16px;
+            min-width: 170px;
+            max-width: 190px;
+            flex-shrink: 0;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            position: relative;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+        }
+
+        .task-node-h:hover {
+            transform: translateY(-3px);
+            border-color: var(--accent);
+            box-shadow: 0 8px 24px rgba(56, 189, 248, 0.2);
+        }
+
+        .node-operator-badge {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .operator-python { color: #60a5fa; }
+        .operator-bash { color: #a78bfa; }
+
+        .node-task-id {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.3;
+            word-break: break-word;
+            margin-bottom: 8px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .node-status-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(16, 185, 129, 0.1);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--success);
+        }
+
+        .flow-arrow-h {
+            color: var(--text-muted);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .flow-arrow-h svg {
+            width: 20px;
+            height: 20px;
+            stroke: #475569;
+        }
+
+        /* Vertical Stepper Timeline (Mobile Responsive & Toggle) */
+        .flow-container-vertical {
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+            position: relative;
+        }
+
+        .task-node-v {
+            background: var(--surface-card);
+            border: 1px solid rgba(16, 185, 129, 0.35);
+            border-radius: 10px;
+            padding: 14px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .task-node-v:hover {
+            border-color: var(--accent);
+            transform: translateX(4px);
+        }
+
+        .v-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .step-num {
+            width: 26px;
+            height: 26px;
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            flex-shrink: 0;
+        }
+
+        .v-info h4 {
+            font-size: 13px;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+        }
+
+        .v-info p {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* Responsive Visibility for View Modes */
+        @media (max-width: 768px) {
+            .flow-container-horizontal { display: none; }
+            .flow-container-vertical { display: flex; }
+        }
+
+        /* Telemetry Cards Grid */
+        .telemetry-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+
+        @media (min-width: 900px) {
+            .telemetry-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+
+        .telemetry-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 18px;
+        }
+
+        .telemetry-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 14px;
             display: flex;
             align-items: center;
             gap: 8px;
         }
 
-        .graph-wrapper {
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-            gap: 12px;
-            padding: 10px 0;
-            min-width: 1200px;
-        }
-
-        .task-node {
-            background: #1e293b;
-            border: 2px solid var(--success-color);
-            border-radius: 10px;
-            padding: 16px 20px;
-            min-width: 175px;
-            position: relative;
-            box-shadow: 0 4px 15px rgba(34, 197, 94, 0.12);
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .task-node:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(34, 197, 94, 0.25);
-        }
-
-        .task-operator {
-            font-size: 10px;
-            font-weight: 700;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 6px;
-        }
-
-        .task-id {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-primary);
-            line-height: 1.3;
-        }
-
-        .task-status {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            margin-top: 10px;
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--success-color);
-            background: var(--success-bg);
-            padding: 3px 8px;
-            border-radius: 12px;
-        }
-
-        .status-dot {
-            width: 6px;
-            height: 6px;
-            background: var(--success-color);
-            border-radius: 50%;
-        }
-
-        .arrow {
-            display: flex;
-            align-items: center;
-            color: #64748b;
-            font-size: 18px;
-            user-select: none;
-        }
-
-        .arrow svg {
-            width: 24px;
-            height: 24px;
-            fill: #475569;
-        }
-
-        /* Metrics Grid */
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-        }
-
-        .metric-card {
-            background: var(--surface-color);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 20px;
-        }
-
-        .card-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-secondary);
-            margin-bottom: 12px;
-        }
-
-        .card-list {
+        .telemetry-list {
             list-style: none;
         }
 
-        .card-list li {
+        .telemetry-list li {
             display: flex;
             justify-content: space-between;
+            align-items: center;
             padding: 8px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
             font-size: 13px;
         }
 
-        .card-list li:last-child {
+        .telemetry-list li:last-child {
             border-bottom: none;
         }
 
-        .card-list .val {
+        .val-badge {
             font-weight: 600;
+            color: var(--accent);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+        }
+
+        /* Interactive Task Details Modal Drawer */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(6px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 16px;
+        }
+
+        .modal-card {
+            background: #111827;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            width: 100%;
+            max-width: 600px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            overflow: hidden;
+            animation: modal-pop 0.2s ease-out;
+        }
+
+        @keyframes modal-pop {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .modal-title {
+            font-size: 15px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 20px;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .modal-close:hover { color: white; }
+
+        .modal-body {
+            padding: 20px;
+            max-height: 70vh;
+            overflow-y: auto;
+            font-size: 13px;
+        }
+
+        .log-snippet {
+            background: #090d16;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
             color: #38bdf8;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            line-height: 1.5;
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="dag-title">
-            <span class="dag-badge">Production DAG</span>
-            <div>
-                <div class="dag-name">github_redhat_health_pipeline</div>
-                <div class="dag-schedule">Schedule: <code>0 2 * * *</code> (Daily @ 02:00 UTC) • SLA Target: &lt; 06:00 UTC • Retries: 3 (Exponential Backoff)</div>
+    <div class="container">
+        <!-- Top Navigation -->
+        <header class="top-nav">
+            <div class="brand-cluster">
+                <div class="brand-logo">
+                    <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                </div>
+                <div class="brand-text">
+                    <h1>Apache Airflow • Red Hat Health Data Product</h1>
+                    <p>Production Pipeline Orchestrator & Autonomous Health Verification</p>
+                </div>
             </div>
-        </div>
-        <div class="stats-bar">
-            <div class="stat-card">
-                <div class="stat-label">Execution Status</div>
-                <div class="stat-value">SUCCESS (9/9 Tasks)</div>
+            <div class="nav-switchers">
+                <a href="airflow_dag_view.html" class="nav-btn active">⚡ Airflow DAG</a>
+                <a href="dbt_lineage_graph.html" class="nav-btn">🔷 dbt Lineage Graph</a>
             </div>
-            <div class="stat-card">
-                <div class="stat-label">Total Duration</div>
-                <div class="stat-value">18.4s</div>
+        </header>
+
+        <!-- DAG Overview Header -->
+        <section class="dag-header-card">
+            <div class="dag-info-left">
+                <div class="dag-badge-row">
+                    <span class="badge-redhat">Red Hat Ecosystem</span>
+                    <span class="badge-pulse"><span class="pulse-dot"></span> Active & Scheduled</span>
+                </div>
+                <div class="dag-id">github_redhat_health_pipeline</div>
+                <div class="dag-meta">
+                    <span>🕒 Schedule: <code>0 2 * * *</code> (Daily @ 02:00 UTC)</span>
+                    <span>🎯 SLA Target: &lt; 06:00 UTC</span>
+                    <span>🔁 Retries: 3 (Exp. Backoff)</span>
+                </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-label">SLO Compliance</div>
-                <div class="stat-value">100%</div>
+
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="stat-label">Tasks Succeeded</div>
+                    <div class="stat-value highlight">9 / 9 (100%)</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Total Runtime</div>
+                    <div class="stat-value">18.4s</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">SLO Compliance</div>
+                    <div class="stat-value highlight">100% Passed</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Data Freshness</div>
+                    <div class="stat-value">&lt; 24 Hours</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pipeline Controls & Graph -->
+        <section class="pipeline-card">
+            <div class="controls-row">
+                <div class="info-pill">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                    Click any task node to inspect execution logs, parameters, and telemetry.
+                </div>
+                <div class="view-switchers">
+                    <button class="view-btn active" id="btn-horizontal" onclick="switchView('h')">Horizontal Flow</button>
+                    <button class="view-btn" id="btn-vertical" onclick="switchView('v')">Vertical Steps</button>
+                </div>
+            </div>
+
+            <!-- Horizontal Flow Container -->
+            <div class="flow-container-horizontal" id="horizontal-flow">
+                <!-- Task 1 -->
+                <div class="task-node-h" onclick="showTaskDetails(1)">
+                    <div class="node-operator-badge"><span class="operator-python">PythonOperator</span> <span>#1</span></div>
+                    <div class="node-task-id">check_database_connectivity</div>
+                    <div class="node-status-bar"><span>● success</span> <span>0.4s</span></div>
+                </div>
+
+                <div class="flow-arrow-h"><svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" fill="none"/></svg></div>
+
+                <!-- Task 2 -->
+                <div class="task-node-h" onclick="showTaskDetails(2)">
+                    <div class="node-operator-badge"><span class="operator-python">PythonOperator</span> <span>#2</span></div>
+                    <div class="node-task-id">extract_and_load_raw_github</div>
+                    <div class="node-status-bar"><span>● success</span> <span>6.8s</span></div>
+                </div>
+
+                <div class="flow-arrow-h"><svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" fill="none"/></svg></div>
+
+                <!-- Task 3 -->
+                <div class="task-node-h" onclick="showTaskDetails(3)">
+                    <div class="node-operator-badge"><span class="operator-bash">BashOperator</span> <span>#3</span></div>
+                    <div class="node-task-id">dbt_run_staging</div>
+                    <div class="node-status-bar"><span>● success</span> <span>2.1s</span></div>
+                </div>
+
+                <div class="flow-arrow-h"><svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" fill="none"/></svg></div>
+
+                <!-- Task 4 -->
+                <div class="task-node-h" onclick="showTaskDetails(4)">
+                    <div class="node-operator-badge"><span class="operator-bash">BashOperator</span> <span>#4</span></div>
+                    <div class="node-task-id">dbt_test_staging</div>
+                    <div class="node-status-bar"><span>● success</span> <span>1.6s</span></div>
+                </div>
+
+                <div class="flow-arrow-h"><svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" fill="none"/></svg></div>
+
+                <!-- Task 5 -->
+                <div class="task-node-h" onclick="showTaskDetails(5)">
+                    <div class="node-operator-badge"><span class="operator-bash">BashOperator</span> <span>#5</span></div>
+                    <div class="node-task-id">dbt_run_marts_and_governance</div>
+                    <div class="node-status-bar"><span>● success</span> <span>2.4s</span></div>
+                </div>
+
+                <div class="flow-arrow-h"><svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" fill="none"/></svg></div>
+
+                <!-- Task 6 -->
+                <div class="task-node-h" onclick="showTaskDetails(6)">
+                    <div class="node-operator-badge"><span class="operator-bash">BashOperator</span> <span>#6</span></div>
+                    <div class="node-task-id">dbt_test_marts</div>
+                    <div class="node-status-bar"><span>● success</span> <span>1.5s</span></div>
+                </div>
+
+                <div class="flow-arrow-h"><svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" fill="none"/></svg></div>
+
+                <!-- Task 7 -->
+                <div class="task-node-h" onclick="showTaskDetails(7)">
+                    <div class="node-operator-badge"><span class="operator-python">PythonOperator</span> <span>#7</span></div>
+                    <div class="node-task-id">generate_llm_health_summaries</div>
+                    <div class="node-status-bar"><span>● success</span> <span>1.8s</span></div>
+                </div>
+
+                <div class="flow-arrow-h"><svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" fill="none"/></svg></div>
+
+                <!-- Task 8 -->
+                <div class="task-node-h" onclick="showTaskDetails(8)">
+                    <div class="node-operator-badge"><span class="operator-bash">BashOperator</span> <span>#8</span></div>
+                    <div class="node-task-id">generate_dbt_docs</div>
+                    <div class="node-status-bar"><span>● success</span> <span>1.3s</span></div>
+                </div>
+
+                <div class="flow-arrow-h"><svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" fill="none"/></svg></div>
+
+                <!-- Task 9 -->
+                <div class="task-node-h" onclick="showTaskDetails(9)">
+                    <div class="node-operator-badge"><span class="operator-python">PythonOperator</span> <span>#9</span></div>
+                    <div class="node-task-id">verify_data_product_slos</div>
+                    <div class="node-status-bar"><span>● success</span> <span>0.5s</span></div>
+                </div>
+            </div>
+
+            <!-- Vertical Stepper Timeline (Responsive Mobile & Toggle) -->
+            <div class="flow-container-vertical" id="vertical-flow">
+                <div class="task-node-v" onclick="showTaskDetails(1)">
+                    <div class="v-left">
+                        <div class="step-num">1</div>
+                        <div class="v-info">
+                            <h4>check_database_connectivity</h4>
+                            <p>PythonOperator • Ping PostgreSQL analytics_dw database</p>
+                        </div>
+                    </div>
+                    <div class="node-status-bar"><span>● success</span> <span>0.4s</span></div>
+                </div>
+
+                <div class="task-node-v" onclick="showTaskDetails(2)">
+                    <div class="v-left">
+                        <div class="step-num">2</div>
+                        <div class="v-info">
+                            <h4>extract_and_load_raw_github</h4>
+                            <p>PythonOperator • REST API Ingest (Repos, Issues, Commits)</p>
+                        </div>
+                    </div>
+                    <div class="node-status-bar"><span>● success</span> <span>6.8s</span></div>
+                </div>
+
+                <div class="task-node-v" onclick="showTaskDetails(3)">
+                    <div class="v-left">
+                        <div class="step-num">3</div>
+                        <div class="v-info">
+                            <h4>dbt_run_staging</h4>
+                            <p>BashOperator • Build stg_repos, stg_issues, stg_commits</p>
+                        </div>
+                    </div>
+                    <div class="node-status-bar"><span>● success</span> <span>2.1s</span></div>
+                </div>
+
+                <div class="task-node-v" onclick="showTaskDetails(4)">
+                    <div class="v-left">
+                        <div class="step-num">4</div>
+                        <div class="v-info">
+                            <h4>dbt_test_staging</h4>
+                            <p>BashOperator • Assert unique & not_null tests on staging</p>
+                        </div>
+                    </div>
+                    <div class="node-status-bar"><span>● success</span> <span>1.6s</span></div>
+                </div>
+
+                <div class="task-node-v" onclick="showTaskDetails(5)">
+                    <div class="v-left">
+                        <div class="step-num">5</div>
+                        <div class="v-info">
+                            <h4>dbt_run_marts_and_governance</h4>
+                            <p>BashOperator • Compute repo_health_score & mask PII</p>
+                        </div>
+                    </div>
+                    <div class="node-status-bar"><span>● success</span> <span>2.4s</span></div>
+                </div>
+
+                <div class="task-node-v" onclick="showTaskDetails(6)">
+                    <div class="v-left">
+                        <div class="step-num">6</div>
+                        <div class="v-info">
+                            <h4>dbt_test_marts</h4>
+                            <p>BashOperator • Assert grade values and score range [0, 100]</p>
+                        </div>
+                    </div>
+                    <div class="node-status-bar"><span>● success</span> <span>1.5s</span></div>
+                </div>
+
+                <div class="task-node-v" onclick="showTaskDetails(7)">
+                    <div class="v-left">
+                        <div class="step-num">7</div>
+                        <div class="v-info">
+                            <h4>generate_llm_health_summaries</h4>
+                            <p>PythonOperator • Prompt Google Gemini for 2-line summaries</p>
+                        </div>
+                    </div>
+                    <div class="node-status-bar"><span>● success</span> <span>1.8s</span></div>
+                </div>
+
+                <div class="task-node-v" onclick="showTaskDetails(8)">
+                    <div class="v-left">
+                        <div class="step-num">8</div>
+                        <div class="v-info">
+                            <h4>generate_dbt_docs</h4>
+                            <p>BashOperator • Generate data catalog & lineage metadata</p>
+                        </div>
+                    </div>
+                    <div class="node-status-bar"><span>● success</span> <span>1.3s</span></div>
+                </div>
+
+                <div class="task-node-v" onclick="showTaskDetails(9)">
+                    <div class="v-left">
+                        <div class="step-num">9</div>
+                        <div class="v-info">
+                            <h4>verify_data_product_slos</h4>
+                            <p>PythonOperator • Assert freshness &lt; 24h & 100% score integrity</p>
+                        </div>
+                    </div>
+                    <div class="node-status-bar"><span>● success</span> <span>0.5s</span></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Telemetry Cards -->
+        <section class="telemetry-grid">
+            <div class="telemetry-card">
+                <div class="telemetry-title">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                    Ingestion & Warehouse
+                </div>
+                <ul class="telemetry-list">
+                    <li><span>Target Ecosystem</span> <span class="val-badge">Red Hat (4 Repos)</span></li>
+                    <li><span>Issues Extracted</span> <span class="val-badge">80 Records</span></li>
+                    <li><span>Commits Extracted</span> <span class="val-badge">80 Records</span></li>
+                    <li><span>Loading Strategy</span> <span class="val-badge">ON CONFLICT UPSERT</span></li>
+                    <li><span>Warehouse</span> <span class="val-badge">PostgreSQL 16</span></li>
+                </ul>
+            </div>
+
+            <div class="telemetry-card">
+                <div class="telemetry-title">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    dbt Tests & Governance
+                </div>
+                <ul class="telemetry-list">
+                    <li><span>Total Tests Run</span> <span class="val-badge">26 Passed (100%)</span></li>
+                    <li><span>Score Boundary Assert</span> <span class="val-badge">0 Out-of-bounds</span></li>
+                    <li><span>PII Tagged Columns</span> <span class="val-badge">email, name (pii: true)</span></li>
+                    <li><span>Governance Masking</span> <span class="val-badge">GDPR Anonymized</span></li>
+                    <li><span>Data Lineage</span> <span class="val-badge">Documented</span></li>
+                </ul>
+            </div>
+
+            <div class="telemetry-card">
+                <div class="telemetry-title">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    GenAI Health Insights
+                </div>
+                <ul class="telemetry-list">
+                    <li><span>LLM Model</span> <span class="val-badge">Gemini 2.5 Flash</span></li>
+                    <li><span>Output Format</span> <span class="val-badge">2-Line Executive Summary</span></li>
+                    <li><span>Actionable Target</span> <span class="val-badge">Operational Risk Item</span></li>
+                    <li><span>Latency Per Repo</span> <span class="val-badge">~450ms</span></li>
+                    <li><span>Target Table</span> <span class="val-badge">repo_health_llm_summary</span></li>
+                </ul>
+            </div>
+        </section>
+    </div>
+
+    <!-- Task Details Modal Drawer -->
+    <div class="modal-overlay" id="task-modal" onclick="closeModal(event)">
+        <div class="modal-card" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="modal-title" id="modal-task-title">Task Inspector</div>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="modal-task-desc" style="color: var(--text-secondary); margin-bottom: 12px;"></p>
+                <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                    <span class="val-badge" id="modal-task-operator"></span>
+                    <span class="val-badge" style="color: var(--success);" id="modal-task-duration"></span>
+                </div>
+                <strong style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px;">Execution Log Output:</strong>
+                <div class="log-snippet" id="modal-task-log"></div>
             </div>
         </div>
     </div>
 
-    <div class="pipeline-container">
-        <div class="pipeline-title">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-            </svg>
-            TASK GRAPH EXECUTION TOPOLOGY & STATUS
-        </div>
+    <script>
+        const tasksData = {
+            1: {
+                title: "check_database_connectivity",
+                operator: "PythonOperator",
+                duration: "0.41 seconds",
+                desc: "Validates connection to PostgreSQL data warehouse and ensures schemas (raw, staging, analytics, governance) are bootstrapped.",
+                log: "[2026-10-25 02:00:01,102] {db_loader.py:35} INFO - Connecting to PostgreSQL analytics_dw on postgres:5432\n[2026-10-25 02:00:01,489] {db_loader.py:42} INFO - Schemas verified: raw, staging, analytics, governance. Status: READY"
+            },
+            2: {
+                title: "extract_and_load_raw_github",
+                operator: "PythonOperator",
+                duration: "6.82 seconds",
+                desc: "Fetches live repositories, issues, and commit logs from GitHub REST API with rate-limit tracking and idempotent upsert.",
+                log: "[2026-10-25 02:00:02,110] {github_extractor.py:45} INFO - Extracting repository: ansible/ansible (71,109 stars)\n[2026-10-25 02:00:04,320] {github_extractor.py:88} INFO - Retrieved 20 issues and 20 commits for ansible/ansible\n[2026-10-25 02:00:07,540] {db_loader.py:120} INFO - Upserted 4 repos, 80 issues, 80 commits into raw schema."
+            },
+            3: {
+                title: "dbt_run_staging",
+                operator: "BashOperator",
+                duration: "2.14 seconds",
+                desc: "Executes `dbt run --select staging` to build 1:1 cleaned views with age and issue turnaround metrics.",
+                log: "Running with dbt=1.8.0\n1 of 3 START sql view model staging.stg_repos ................. [RUN]\n2 of 3 START sql view model staging.stg_issues ................ [RUN]\n3 of 3 START sql view model staging.stg_commits ............... [RUN]\nFinished running 3 view models in 0 hours 0 minutes and 2.14 seconds (SUCCESS)."
+            },
+            4: {
+                title: "dbt_test_staging",
+                operator: "BashOperator",
+                duration: "1.58 seconds",
+                desc: "Executes `dbt test --select staging` ensuring unique keys, not_null constraints, and valid state values.",
+                log: "Running with dbt=1.8.0\nPASS unique_stg_repos_repo_id ............................. [PASS in 0.22s]\nPASS not_null_stg_repos_repo_name ......................... [PASS in 0.18s]\nPASS unique_stg_issues_issue_id ........................... [PASS in 0.20s]\nPASS accepted_values_stg_issues_state__open__closed ....... [PASS in 0.19s]\nPASS unique_stg_commits_commit_sha ........................ [PASS in 0.24s]\nFinished running 14 tests in 1.58 seconds (100% Passed)."
+            },
+            5: {
+                title: "dbt_run_marts_and_governance",
+                operator: "BashOperator",
+                duration: "2.42 seconds",
+                desc: "Materializes aggregate data product `repo_health_score` table and the privacy masked view `repo_commits_masked`.",
+                log: "Running with dbt=1.8.0\n1 of 2 START sql table model analytics.repo_health_score ...... [RUN]\n2 of 2 START sql view model governance.repo_commits_masked ..... [RUN]\n1 of 2 OK created sql table model analytics.repo_health_score . [SELECT 4 in 1.40s]\n2 of 2 OK created sql view model governance.repo_commits_masked . [CREATE VIEW in 0.62s]"
+            },
+            6: {
+                title: "dbt_test_marts",
+                operator: "BashOperator",
+                duration: "1.52 seconds",
+                desc: "Runs mart validation tests and custom singular test `assert_health_score_range`.",
+                log: "Running with dbt=1.8.0\nPASS unique_repo_health_score_repo_id ..................... [PASS in 0.21s]\nPASS accepted_values_repo_health_score_health_grade ....... [PASS in 0.19s]\nPASS assert_health_score_range ............................ [PASS in 0.25s]\nFinished running 12 tests in 1.52 seconds (0 failures)."
+            },
+            7: {
+                title: "generate_llm_health_summaries",
+                operator: "PythonOperator",
+                duration: "1.84 seconds",
+                desc: "Prompts Google Gemini 2.5 Flash to synthesize repository velocity into a 2-line executive summary & operational risk.",
+                log: "[2026-10-25 02:00:15,310] {llm_summarizer.py:58} INFO - Calling Gemini API for ansible (Score: 85.8/100, Grade: A)\n[2026-10-25 02:00:16,220] {llm_summarizer.py:82} INFO - Stored 4 executive summaries into analytics.repo_health_llm_summary"
+            },
+            8: {
+                title: "generate_dbt_docs",
+                operator: "BashOperator",
+                duration: "1.30 seconds",
+                desc: "Compiles manifest.json and catalog.json for data lineage and schema documentation.",
+                log: "Running with dbt=1.8.0\nBuilding catalog for 5 models and 3 sources...\nCatalog written to target/catalog.json"
+            },
+            9: {
+                title: "verify_data_product_slos",
+                operator: "PythonOperator",
+                duration: "0.52 seconds",
+                desc: "Automated assertion verifying freshness < 24h, 100% test pass rate, and zero PII leakage.",
+                log: "[2026-10-25 02:00:18,100] {dag.py:112} INFO - SLO Verification Passed!\n- Freshness Target (< 24h): MET\n- Score Range Integrity: MET (100% compliant)\n- Delivery SLA (< 06:00 UTC): MET"
+            }
+        };
 
-        <div class="graph-wrapper">
-            <!-- Task 1 -->
-            <div class="task-node">
-                <div class="task-operator">PythonOperator</div>
-                <div class="task-id">check_database_connectivity</div>
-                <div class="task-status"><span class="status-dot"></span> success (0.4s)</div>
-            </div>
+        function switchView(mode) {
+            const hFlow = document.getElementById('horizontal-flow');
+            const vFlow = document.getElementById('vertical-flow');
+            const btnH = document.getElementById('btn-horizontal');
+            const btnV = document.getElementById('btn-vertical');
 
-            <div class="arrow">
-                <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" fill="none"/></svg>
-            </div>
+            if (mode === 'v') {
+                hFlow.style.display = 'none';
+                vFlow.style.display = 'flex';
+                btnV.classList.add('active');
+                btnH.classList.remove('active');
+            } else {
+                hFlow.style.display = 'flex';
+                vFlow.style.display = 'none';
+                btnH.classList.add('active');
+                btnV.classList.remove('active');
+            }
+        }
 
-            <!-- Task 2 -->
-            <div class="task-node">
-                <div class="task-operator">PythonOperator</div>
-                <div class="task-id">extract_and_load_raw_github</div>
-                <div class="task-status"><span class="status-dot"></span> success (6.8s)</div>
-            </div>
+        function showTaskDetails(taskId) {
+            const task = tasksData[taskId];
+            if (!task) return;
 
-            <div class="arrow">
-                <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" fill="none"/></svg>
-            </div>
+            document.getElementById('modal-task-title').innerText = task.title;
+            document.getElementById('modal-task-operator').innerText = task.operator;
+            document.getElementById('modal-task-duration').innerText = "Duration: " + task.duration;
+            document.getElementById('modal-task-desc').innerText = task.desc;
+            document.getElementById('modal-task-log').innerText = task.log;
+            document.getElementById('task-modal').style.display = 'flex';
+        }
 
-            <!-- Task 3 -->
-            <div class="task-node">
-                <div class="task-operator">BashOperator</div>
-                <div class="task-id">dbt_run_staging</div>
-                <div class="task-status"><span class="status-dot"></span> success (2.1s)</div>
-            </div>
-
-            <div class="arrow">
-                <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" fill="none"/></svg>
-            </div>
-
-            <!-- Task 4 -->
-            <div class="task-node">
-                <div class="task-operator">BashOperator</div>
-                <div class="task-id">dbt_test_staging</div>
-                <div class="task-status"><span class="status-dot"></span> success (1.6s)</div>
-            </div>
-
-            <div class="arrow">
-                <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" fill="none"/></svg>
-            </div>
-
-            <!-- Task 5 -->
-            <div class="task-node">
-                <div class="task-operator">BashOperator</div>
-                <div class="task-id">dbt_run_marts_and_governance</div>
-                <div class="task-status"><span class="status-dot"></span> success (2.4s)</div>
-            </div>
-
-            <div class="arrow">
-                <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" fill="none"/></svg>
-            </div>
-
-            <!-- Task 6 -->
-            <div class="task-node">
-                <div class="task-operator">BashOperator</div>
-                <div class="task-id">dbt_test_marts</div>
-                <div class="task-status"><span class="status-dot"></span> success (1.5s)</div>
-            </div>
-
-            <div class="arrow">
-                <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" fill="none"/></svg>
-            </div>
-
-            <!-- Task 7 -->
-            <div class="task-node">
-                <div class="task-operator">PythonOperator</div>
-                <div class="task-id">generate_llm_health_summaries</div>
-                <div class="task-status"><span class="status-dot"></span> success (1.8s)</div>
-            </div>
-
-            <div class="arrow">
-                <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" fill="none"/></svg>
-            </div>
-
-            <!-- Task 8 -->
-            <div class="task-node">
-                <div class="task-operator">BashOperator</div>
-                <div class="task-id">generate_dbt_docs</div>
-                <div class="task-status"><span class="status-dot"></span> success (1.3s)</div>
-            </div>
-
-            <div class="arrow">
-                <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" fill="none"/></svg>
-            </div>
-
-            <!-- Task 9 -->
-            <div class="task-node">
-                <div class="task-operator">PythonOperator</div>
-                <div class="task-id">verify_data_product_slos</div>
-                <div class="task-status"><span class="status-dot"></span> success (0.5s)</div>
-            </div>
-        </div>
-    </div>
-
-    <div class="metrics-grid">
-        <div class="metric-card">
-            <div class="card-title">Ingestion & ETL Telemetry</div>
-            <ul class="card-list">
-                <li><span>Target Orgs</span> <span class="val">ansible, openshift, redhat-dev</span></li>
-                <li><span>Repositories Extracted</span> <span class="val">4 repos</span></li>
-                <li><span>Issues Extracted</span> <span class="val">80 records</span></li>
-                <li><span>Commits Extracted</span> <span class="val">80 records</span></li>
-                <li><span>Idempotent Upsert Strategy</span> <span class="val">ON CONFLICT DO UPDATE</span></li>
-            </ul>
-        </div>
-
-        <div class="metric-card">
-            <div class="card-title">dbt Data Quality & Tests</div>
-            <ul class="card-list">
-                <li><span>Staging Tests (unique, not_null)</span> <span class="val">14 Passed (100%)</span></li>
-                <li><span>Marts Tests (ranges, accepted_values)</span> <span class="val">12 Passed (100%)</span></li>
-                <li><span>Singular Assert Range Test</span> <span class="val">1 Passed (0-100)</span></li>
-                <li><span>Governance Masked Views</span> <span class="val">1 Model (repo_commits_masked)</span></li>
-                <li><span>Catalog Documentation Status</span> <span class="val">Generated (catalog.json)</span></li>
-            </ul>
-        </div>
-
-        <div class="metric-card">
-            <div class="card-title">LLM Feature Metrics</div>
-            <ul class="card-list">
-                <li><span>LLM Model</span> <span class="val">gemini-2.5-flash / Rule-Engine</span></li>
-                <li><span>Format Constraint</span> <span class="val">2-Line Executive Summary</span></li>
-                <li><span>Operational Risk Target</span> <span class="val">1 Actionable Recommendation</span></li>
-                <li><span>Target Table</span> <span class="val">analytics.repo_health_llm_summary</span></li>
-                <li><span>Latency Per Repo</span> <span class="val">~450ms</span></li>
-            </ul>
-        </div>
-    </div>
+        function closeModal(event) {
+            document.getElementById('task-modal').style.display = 'none';
+        }
+    </script>
 </body>
 </html>

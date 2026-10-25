@@ -4,289 +4,519 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>dbt Lineage Graph & Catalog - Health Data Product</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg: #090d16;
-            --surface: #131b2e;
-            --surface-hover: #1b2640;
-            --border: #22304d;
+            --surface: rgba(19, 27, 46, 0.75);
+            --surface-card: #131d31;
+            --surface-hover: #1b2844;
+            --border: rgba(255, 255, 255, 0.08);
+            --border-highlight: rgba(56, 189, 248, 0.3);
             --text-primary: #f8fafc;
-            --text-muted: #94a3b8;
-            --source-color: #06b6d4;
-            --staging-color: #3b82f6;
-            --marts-color: #10b981;
-            --governance-color: #f59e0b;
-            --llm-color: #a855f7;
-            --test-pass: #22c55e;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --source: #06b6d4;
+            --staging: #3b82f6;
+            --marts: #10b981;
+            --governance: #f59e0b;
+            --llm: #a855f7;
+            --success: #10b981;
+            --accent: #38bdf8;
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+            -webkit-font-smoothing: antialiased;
         }
 
         body {
             background-color: var(--bg);
+            background-image: 
+                radial-gradient(circle at 85% 15%, rgba(6, 182, 212, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 15% 85%, rgba(16, 185, 129, 0.05) 0%, transparent 40%);
             color: var(--text-primary);
-            padding: 24px;
+            padding: 16px;
             min-height: 100vh;
         }
 
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: var(--surface);
-            padding: 20px 24px;
-            border-radius: 12px;
-            border: 1px solid var(--border);
-            margin-bottom: 24px;
+        @media (min-width: 768px) {
+            body { padding: 24px; }
         }
 
-        .dbt-brand {
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Top Navigation */
+        .top-nav {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .brand-cluster {
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 12px;
         }
 
         .dbt-logo {
-            background: #ff694b;
+            background: linear-gradient(135deg, #ff694b 0%, #ee4724 100%);
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             color: white;
             font-weight: 900;
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 16px;
+            font-size: 15px;
+            box-shadow: 0 4px 12px rgba(255, 105, 75, 0.35);
         }
 
-        .project-title {
-            font-size: 20px;
+        .brand-text h1 {
+            font-size: 17px;
             font-weight: 700;
+            letter-spacing: -0.3px;
         }
 
-        .project-subtitle {
-            font-size: 13px;
-            color: var(--text-muted);
-            margin-top: 3px;
+        .brand-text p {
+            font-size: 12px;
+            color: var(--text-secondary);
         }
 
-        .badge-bar {
+        .nav-switchers {
             display: flex;
-            gap: 10px;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.04);
+            padding: 4px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
         }
 
-        .badge {
+        .nav-btn {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: 6px;
+            text-decoration: none;
+            color: var(--text-secondary);
+            transition: all 0.2s ease;
+        }
+
+        .nav-btn.active {
+            background: #1e293b;
+            color: #ff694b;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255, 105, 75, 0.3);
+        }
+
+        .nav-btn:hover:not(.active) { color: var(--text-primary); }
+
+        /* Header Card */
+        .header-card {
+            background: var(--surface);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+        }
+
+        @media (min-width: 900px) {
+            .header-card {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+        }
+
+        .header-left { margin-bottom: 16px; }
+        @media (min-width: 900px) { .header-left { margin-bottom: 0; } }
+
+        .badge-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .badge-pill {
             font-size: 11px;
             font-weight: 700;
-            padding: 5px 12px;
+            padding: 3px 10px;
             border-radius: 20px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
         .badge-tests {
-            background: rgba(34, 197, 94, 0.15);
-            color: var(--test-pass);
-            border: 1px solid rgba(34, 197, 94, 0.3);
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.3);
         }
 
         .badge-gov {
             background: rgba(245, 158, 11, 0.15);
-            color: var(--governance-color);
+            color: var(--governance);
             border: 1px solid rgba(245, 158, 11, 0.3);
         }
 
-        /* Lineage Graph Visualizer */
-        .lineage-container {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 32px 24px;
-            margin-bottom: 24px;
-            position: relative;
-            overflow-x: auto;
+        .project-title {
+            font-size: 20px;
+            font-weight: 800;
+            letter-spacing: -0.4px;
         }
 
-        .lineage-title {
+        .project-meta {
             font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 6px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 14px;
+        }
+
+        @media (min-width: 768px) {
+            .stats-grid {
+                grid-template-columns: repeat(4, 1fr);
+                margin-top: 0;
+            }
+        }
+
+        .stat-box {
+            background: rgba(10, 16, 30, 0.7);
+            border: 1px solid var(--border);
+            padding: 12px 16px;
+            border-radius: 10px;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            font-weight: 600;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 800;
+            margin-top: 2px;
+            color: var(--text-primary);
+        }
+
+        .stat-value.highlight { color: var(--success); }
+
+        /* Lineage Section Card */
+        .lineage-card {
+            background: var(--surface);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 24px 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+        }
+
+        .controls-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .info-pill {
+            font-size: 12px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .view-switchers {
+            display: flex;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.04);
+            padding: 3px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .view-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .view-btn.active {
+            background: #1e293b;
+            color: #ff694b;
+            border: 1px solid rgba(255, 105, 75, 0.3);
+        }
+
+        /* Lineage Graph: Horizontal Multi-Column (Desktop) */
+        .graph-wrapper-horizontal {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            overflow-x: auto;
+            padding: 10px 4px 20px 4px;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 105, 75, 0.3) transparent;
+        }
+
+        .graph-wrapper-horizontal::-webkit-scrollbar { height: 6px; }
+        .graph-wrapper-horizontal::-webkit-scrollbar-thumb {
+            background: rgba(255, 105, 75, 0.3);
+            border-radius: 6px;
+        }
+
+        .stage-col {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            min-width: 210px;
+            flex-shrink: 0;
+        }
+
+        .stage-title {
+            font-size: 11px;
             font-weight: 700;
             color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 0.8px;
-            margin-bottom: 28px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .graph-columns {
-            display: grid;
-            grid-template-columns: 240px 60px 240px 60px 280px 60px 260px;
-            align-items: center;
-            min-width: 1200px;
-            gap: 0;
-        }
-
-        .stage-column {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .connector-col {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .connector-arrow {
-            color: #475569;
-            width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .connector-arrow svg {
-            width: 32px;
-            height: 32px;
-            fill: none;
-            stroke: #475569;
-            stroke-width: 2;
-        }
-
-        .node-card {
-            background: #182238;
-            border-radius: 10px;
-            padding: 16px;
-            border: 1px solid var(--border);
-            position: relative;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .node-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-        }
-
-        .node-card.source {
-            border-left: 4px solid var(--source-color);
-        }
-        .node-card.staging {
-            border-left: 4px solid var(--staging-color);
-        }
-        .node-card.marts {
-            border-left: 4px solid var(--marts-color);
-            background: #142e2b;
-        }
-        .node-card.governance {
-            border-left: 4px solid var(--governance-color);
-            background: #2b2214;
-        }
-        .node-card.llm {
-            border-left: 4px solid var(--llm-color);
-            background: #231633;
-        }
-
-        .node-tag {
-            font-size: 10px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 6px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--border);
             display: flex;
             justify-content: space-between;
         }
 
-        .source .node-tag { color: var(--source-color); }
-        .staging .node-tag { color: var(--staging-color); }
-        .marts .node-tag { color: var(--marts-color); }
-        .governance .node-tag { color: var(--governance-color); }
-        .llm .node-tag { color: var(--llm-color); }
+        .arrow-col {
+            color: var(--text-muted);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+        }
 
-        .node-name {
-            font-size: 14px;
+        .arrow-col svg {
+            width: 24px;
+            height: 24px;
+            stroke: #475569;
+        }
+
+        /* Model Cards */
+        .model-card {
+            background: var(--surface-card);
+            border-radius: 10px;
+            padding: 14px 16px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.25s ease;
+            position: relative;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+        }
+
+        .model-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+
+        .model-card.source { border-left: 4px solid var(--source); }
+        .model-card.staging { border-left: 4px solid var(--staging); }
+        .model-card.marts { border-left: 4px solid var(--marts); background: #112723; }
+        .model-card.governance { border-left: 4px solid var(--governance); background: #241c12; }
+        .model-card.llm { border-left: 4px solid var(--llm); background: #20132b; }
+
+        .card-tag-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 10px;
             font-weight: 700;
-            color: var(--text-primary);
+            text-transform: uppercase;
             margin-bottom: 6px;
         }
 
-        .node-desc {
-            font-size: 12px;
-            color: var(--text-muted);
+        .source .card-tag-row { color: var(--source); }
+        .staging .card-tag-row { color: var(--staging); }
+        .marts .card-tag-row { color: var(--marts); }
+        .governance .card-tag-row { color: var(--governance); }
+        .llm .card-tag-row { color: var(--llm); }
+
+        .card-name {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            margin-bottom: 6px;
+            word-break: break-word;
+        }
+
+        .card-desc {
+            font-size: 11px;
+            color: var(--text-secondary);
             line-height: 1.4;
         }
 
-        .test-pill {
+        .test-badge {
             display: inline-flex;
             align-items: center;
             gap: 4px;
             font-size: 10px;
             font-weight: 600;
-            color: var(--test-pass);
-            background: rgba(34, 197, 94, 0.1);
-            padding: 2px 6px;
+            color: var(--success);
+            background: rgba(16, 185, 129, 0.1);
+            padding: 3px 6px;
             border-radius: 4px;
-            margin-top: 10px;
+            margin-top: 8px;
         }
 
-        /* Documentation & Metadata Panel */
-        .catalog-section {
-            background: var(--surface);
+        /* Lineage Graph: Vertical Stack (Mobile View) */
+        .graph-wrapper-vertical {
+            display: none;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .stage-box-v {
+            background: rgba(10, 16, 30, 0.6);
             border: 1px solid var(--border);
             border-radius: 12px;
-            padding: 24px;
+            padding: 14px;
+        }
+
+        .stage-box-title-v {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .stage-items-v {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .flow-down-arrow {
+            display: flex;
+            justify-content: center;
+            padding: 4px 0;
+            color: var(--text-muted);
+        }
+
+        @media (max-width: 900px) {
+            .graph-wrapper-horizontal { display: none; }
+            .graph-wrapper-vertical { display: flex; }
+        }
+
+        /* Catalog Table Section */
+        .catalog-card {
+            background: var(--surface);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 24px 20px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
         }
 
         .catalog-header {
             display: flex;
+            flex-wrap: wrap;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 18px;
-            border-bottom: 1px solid var(--border);
+            gap: 12px;
+            margin-bottom: 16px;
             padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
         }
 
         .catalog-title {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .table-responsive {
             overflow-x: auto;
+            border: 1px solid var(--border);
+            border-radius: 10px;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
             font-size: 13px;
+            min-width: 600px;
         }
 
         th {
+            background: rgba(255, 255, 255, 0.02);
             text-align: left;
-            padding: 12px;
-            color: var(--text-muted);
-            font-weight: 600;
-            border-bottom: 1px solid var(--border);
+            padding: 12px 14px;
             font-size: 11px;
+            font-weight: 700;
             text-transform: uppercase;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border);
         }
 
         td {
-            padding: 12px;
+            padding: 12px 14px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.04);
             color: var(--text-primary);
         }
 
-        .type-badge {
-            font-family: monospace;
+        tr:last-child td { border-bottom: none; }
+
+        .type-pill {
+            font-family: 'JetBrains Mono', monospace;
             font-size: 11px;
-            background: rgba(255, 255, 255, 0.06);
+            color: var(--accent);
+            background: rgba(56, 189, 248, 0.1);
             padding: 2px 6px;
             border-radius: 4px;
-            color: #38bdf8;
         }
 
         .tag-pii {
@@ -297,189 +527,471 @@
             font-size: 10px;
             font-weight: 700;
         }
+
+        /* Modal Inspector */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(6px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 16px;
+        }
+
+        .modal-card {
+            background: #111827;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            width: 100%;
+            max-width: 620px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            overflow: hidden;
+            animation: modal-pop 0.2s ease-out;
+        }
+
+        @keyframes modal-pop {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .modal-title {
+            font-size: 15px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            color: #ff694b;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .modal-close:hover { color: white; }
+
+        .modal-body {
+            padding: 20px;
+            max-height: 70vh;
+            overflow-y: auto;
+            font-size: 13px;
+        }
+
+        .code-box {
+            background: #090d16;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: #38bdf8;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            line-height: 1.5;
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="dbt-brand">
-            <div class="dbt-logo">dbt</div>
-            <div>
-                <div class="project-title">Health Data Product - Documentation & Lineage Catalog</div>
-                <div class="project-subtitle">Target: <code>analytics_dw</code> • Models: 5 • Tests: 26 (100% Passed) • PII Governance Enforced</div>
+    <div class="container">
+        <!-- Navigation -->
+        <header class="top-nav">
+            <div class="brand-cluster">
+                <div class="dbt-logo">dbt</div>
+                <div class="brand-text">
+                    <h1>dbt Core • Lineage Graph & Model Catalog</h1>
+                    <p>Source-Aligned Transformations, Data Product Scoring & PII Masking</p>
+                </div>
             </div>
-        </div>
-        <div class="badge-bar">
-            <span class="badge badge-tests">✓ 26 dbt Tests Passing</span>
-            <span class="badge badge-gov">🛡️ GDPR PII Masked</span>
+            <div class="nav-switchers">
+                <a href="airflow_dag_view.html" class="nav-btn">⚡ Airflow DAG</a>
+                <a href="dbt_lineage_graph.html" class="nav-btn active">🔷 dbt Lineage Graph</a>
+            </div>
+        </header>
+
+        <!-- Header Card -->
+        <section class="header-card">
+            <div class="header-left">
+                <div class="badge-row">
+                    <span class="badge-pill badge-tests">✓ 26 dbt Tests Passing</span>
+                    <span class="badge-pill badge-gov">🛡️ GDPR Masking Active</span>
+                </div>
+                <div class="project-title">Red Hat Health Data Product Catalog</div>
+                <div class="project-meta">
+                    <span>Database: <code>analytics_dw</code></span>
+                    <span>Profile: <code>github_health</code></span>
+                    <span>Materializations: View / Table</span>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="stat-label">Total Models</div>
+                    <div class="stat-value">5 Models</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Raw Sources</div>
+                    <div class="stat-value">3 Sources</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">dbt Tests Run</div>
+                    <div class="stat-value highlight">26 (100% Pass)</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">PII Leakage</div>
+                    <div class="stat-value highlight">0.00%</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Lineage Graph Section -->
+        <section class="lineage-card">
+            <div class="controls-row">
+                <div class="info-pill">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                    Click any node card to inspect SQL logic, schema constraints, and tests.
+                </div>
+                <div class="view-switchers">
+                    <button class="view-btn active" id="btn-h" onclick="switchGraph('h')">Multi-Column Graph</button>
+                    <button class="view-btn" id="btn-v" onclick="switchGraph('v')">Stacked Stages</button>
+                </div>
+            </div>
+
+            <!-- Horizontal Multi-Column Graph (Desktop) -->
+            <div class="graph-wrapper-horizontal" id="graph-h">
+                <!-- Column 1: Sources -->
+                <div class="stage-col">
+                    <div class="stage-title"><span>Sources</span> <span>3 Tables</span></div>
+                    <div class="model-card source" onclick="showModelDetails('raw_repos')">
+                        <div class="card-tag-row"><span>Source</span> <span>Postgres</span></div>
+                        <div class="card-name">raw.raw_repos</div>
+                        <div class="card-desc">Raw repo metadata: stars, forks, open issues, language.</div>
+                    </div>
+                    <div class="model-card source" onclick="showModelDetails('raw_issues')">
+                        <div class="card-tag-row"><span>Source</span> <span>Postgres</span></div>
+                        <div class="card-name">raw.raw_issues</div>
+                        <div class="card-desc">Raw issues & PRs with created_at and closed_at.</div>
+                    </div>
+                    <div class="model-card source" onclick="showModelDetails('raw_commits')">
+                        <div class="card-tag-row"><span>Source</span> <span>Postgres</span></div>
+                        <div class="card-name">raw.raw_commits</div>
+                        <div class="card-desc">Raw commit log with commit author, email & date.</div>
+                    </div>
+                </div>
+
+                <div class="arrow-col"><svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" fill="none"/></svg></div>
+
+                <!-- Column 2: Staging Layer -->
+                <div class="stage-col">
+                    <div class="stage-title"><span>Staging Layer</span> <span>3 Views</span></div>
+                    <div class="model-card staging" onclick="showModelDetails('stg_repos')">
+                        <div class="card-tag-row"><span>View</span> <span>1:1 Clean</span></div>
+                        <div class="card-name">stg_repos</div>
+                        <div class="card-desc">Casts types, computes repo_age_days and days_since_last_push.</div>
+                        <div class="test-badge">✓ unique, not_null</div>
+                    </div>
+                    <div class="model-card staging" onclick="showModelDetails('stg_issues')">
+                        <div class="card-tag-row"><span>View</span> <span>Turnaround</span></div>
+                        <div class="card-name">stg_issues</div>
+                        <div class="card-desc">Calculates duration_days_to_close and separates PRs.</div>
+                        <div class="test-badge">✓ unique, not_null, state</div>
+                    </div>
+                    <div class="model-card staging" onclick="showModelDetails('stg_commits')">
+                        <div class="card-tag-row"><span>View</span> <span>PII Tagged</span></div>
+                        <div class="card-name">stg_commits</div>
+                        <div class="card-desc">Standardizes Git authors with tagged PII fields.</div>
+                        <div class="test-badge">✓ unique, pii: true</div>
+                    </div>
+                </div>
+
+                <div class="arrow-col"><svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" fill="none"/></svg></div>
+
+                <!-- Column 3: Marts & Governance -->
+                <div class="stage-col">
+                    <div class="stage-title"><span>Marts & Gov</span> <span>2 Models</span></div>
+                    <div class="model-card marts" onclick="showModelDetails('repo_health_score')">
+                        <div class="card-tag-row"><span>Table</span> <span>Data Product</span></div>
+                        <div class="card-name">repo_health_score</div>
+                        <div class="card-desc">Composite 0-100 score + Window ranks across Red Hat.</div>
+                        <div class="test-badge">✓ not_null, grades, bounds</div>
+                    </div>
+                    <div class="model-card governance" onclick="showModelDetails('repo_commits_masked')">
+                        <div class="card-tag-row"><span>View</span> <span>GDPR Masking</span></div>
+                        <div class="card-name">repo_commits_masked</div>
+                        <div class="card-desc">Masks author email & name, preserving MD5 pseudonym key.</div>
+                        <div class="test-badge">✓ 0% PII Leakage</div>
+                    </div>
+                </div>
+
+                <div class="arrow-col"><svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" fill="none"/></svg></div>
+
+                <!-- Column 4: GenAI Layer -->
+                <div class="stage-col">
+                    <div class="stage-title"><span>LLM Insights</span> <span>1 Table</span></div>
+                    <div class="model-card llm" onclick="showModelDetails('repo_health_llm_summary')">
+                        <div class="card-tag-row"><span>GenAI</span> <span>Gemini 2.5 Flash</span></div>
+                        <div class="card-name">repo_health_llm_summary</div>
+                        <div class="card-desc">Executive 2-line velocity synthesis & operational risk assessment.</div>
+                        <div class="test-badge">✓ 2-line summary</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vertical Stacked Stages (Responsive Mobile) -->
+            <div class="graph-wrapper-vertical" id="graph-v">
+                <!-- Stage 1 -->
+                <div class="stage-box-v">
+                    <div class="stage-box-title-v"><span>1. Raw PostgreSQL Sources</span> <span>3 Tables</span></div>
+                    <div class="stage-items-v">
+                        <div class="model-card source" onclick="showModelDetails('raw_repos')">
+                            <div class="card-tag-row"><span>Source</span> <span>Postgres</span></div>
+                            <div class="card-name">raw.raw_repos</div>
+                            <div class="card-desc">Repository metadata (stars, forks, open issues).</div>
+                        </div>
+                        <div class="model-card source" onclick="showModelDetails('raw_issues')">
+                            <div class="card-tag-row"><span>Source</span> <span>Postgres</span></div>
+                            <div class="card-name">raw.raw_issues</div>
+                            <div class="card-desc">Issues and PRs with turnaround timestamps.</div>
+                        </div>
+                        <div class="model-card source" onclick="showModelDetails('raw_commits')">
+                            <div class="card-tag-row"><span>Source</span> <span>Postgres</span></div>
+                            <div class="card-name">raw.raw_commits</div>
+                            <div class="card-desc">Commit log with author name and sensitive email.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flow-down-arrow"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg></div>
+
+                <!-- Stage 2 -->
+                <div class="stage-box-v">
+                    <div class="stage-box-title-v"><span>2. Source-Aligned dbt Staging</span> <span>3 Views</span></div>
+                    <div class="stage-items-v">
+                        <div class="model-card staging" onclick="showModelDetails('stg_repos')">
+                            <div class="card-name">stg_repos</div>
+                            <div class="card-desc">Casts types, computes repo_age_days and days_since_last_push.</div>
+                        </div>
+                        <div class="model-card staging" onclick="showModelDetails('stg_issues')">
+                            <div class="card-name">stg_issues</div>
+                            <div class="card-desc">Computes duration_days_to_close and separates PRs from issues.</div>
+                        </div>
+                        <div class="model-card staging" onclick="showModelDetails('stg_commits')">
+                            <div class="card-name">stg_commits</div>
+                            <div class="card-desc">Standardizes Git authors with tagged PII fields (email, name).</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flow-down-arrow"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg></div>
+
+                <!-- Stage 3 -->
+                <div class="stage-box-v">
+                    <div class="stage-box-title-v"><span>3. Analytics Marts & Governance</span> <span>2 Models</span></div>
+                    <div class="stage-items-v">
+                        <div class="model-card marts" onclick="showModelDetails('repo_health_score')">
+                            <div class="card-name">analytics.repo_health_score (Table)</div>
+                            <div class="card-desc">Composite 0-100 score + Window ranks across Red Hat.</div>
+                        </div>
+                        <div class="model-card governance" onclick="showModelDetails('repo_commits_masked')">
+                            <div class="card-name">governance.repo_commits_masked (View)</div>
+                            <div class="card-desc">Masks author email & name, preserving MD5 pseudonym key.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flow-down-arrow"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg></div>
+
+                <!-- Stage 4 -->
+                <div class="stage-box-v">
+                    <div class="stage-box-title-v"><span>4. GenAI / LLM Insights</span> <span>1 Table</span></div>
+                    <div class="model-card llm" onclick="showModelDetails('repo_health_llm_summary')">
+                        <div class="card-name">analytics.repo_health_llm_summary</div>
+                        <div class="card-desc">Executive 2-line velocity synthesis & operational risk assessment.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Catalog Schema Specification -->
+        <section class="catalog-card">
+            <div class="catalog-header">
+                <div class="catalog-title">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+                    Data Product Schema Specification: <code>analytics.repo_health_score</code>
+                </div>
+                <span class="badge-pill badge-tests">Materialized: TABLE</span>
+            </div>
+
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Column</th>
+                            <th>Data Type</th>
+                            <th>Description</th>
+                            <th>Tests & Constraints</th>
+                            <th>Tags</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>repo_id</strong></td>
+                            <td><span class="type-pill">BIGINT</span></td>
+                            <td>Unique GitHub repository identifier (Primary Key).</td>
+                            <td><span class="test-badge">unique</span> <span class="test-badge">not_null</span></td>
+                            <td>PK</td>
+                        </tr>
+                        <tr>
+                            <td><strong>full_name</strong></td>
+                            <td><span class="type-pill">VARCHAR(255)</span></td>
+                            <td>Full repository namespace slug (e.g. ansible/ansible).</td>
+                            <td><span class="test-badge">not_null</span></td>
+                            <td>Ident</td>
+                        </tr>
+                        <tr>
+                            <td><strong>health_score</strong></td>
+                            <td><span class="type-pill">NUMERIC(5,2)</span></td>
+                            <td>Weighted score: 40% issue velocity + 35% commits + 25% community.</td>
+                            <td><span class="test-badge">not_null</span> <span class="test-badge">range[0,100]</span></td>
+                            <td>Metric</td>
+                        </tr>
+                        <tr>
+                            <td><strong>health_grade</strong></td>
+                            <td><span class="type-pill">VARCHAR(10)</span></td>
+                            <td>Standardized grade tier (A+, A, B, C, Needs Attention).</td>
+                            <td><span class="test-badge">accepted_values</span></td>
+                            <td>Dimension</td>
+                        </tr>
+                        <tr>
+                            <td><strong>ecosystem_health_rank</strong></td>
+                            <td><span class="type-pill">INTEGER</span></td>
+                            <td>Window function: DENSE_RANK() OVER (ORDER BY health_score DESC).</td>
+                            <td><span class="test-badge">not_null</span></td>
+                            <td>Window</td>
+                        </tr>
+                        <tr>
+                            <td><strong>author_email_masked</strong></td>
+                            <td><span class="type-pill">VARCHAR(255)</span></td>
+                            <td>GDPR masked email preserving domain (v***h@redhat.com).</td>
+                            <td><span class="test-badge">not_null</span></td>
+                            <td><span class="tag-pii">PII MASKED</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <!-- Modal Inspector -->
+    <div class="modal-overlay" id="model-modal" onclick="closeModelModal(event)">
+        <div class="modal-card" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="modal-title" id="modal-model-title">Model Inspector</div>
+                <button class="modal-close" onclick="closeModelModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="modal-model-desc" style="color: var(--text-secondary); margin-bottom: 12px;"></p>
+                <strong style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px;">Compiled dbt SQL Logic:</strong>
+                <div class="code-box" id="modal-model-sql"></div>
+            </div>
         </div>
     </div>
 
-    <div class="lineage-container">
-        <div class="lineage-title">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="18" cy="5" r="3"></circle>
-                <circle cx="6" cy="12" r="3"></circle>
-                <circle cx="18" cy="19" r="3"></circle>
-                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-            </svg>
-            dbt Directed Acyclic Graph (DAG) & End-to-End Data Lineage
-        </div>
+    <script>
+        const modelsData = {
+            'repo_health_score': {
+                title: "analytics.repo_health_score (TABLE)",
+                desc: "Aggregate Data Product calculating 0-100 composite health scores combining issue turnaround, commit cadence, and community scale, augmented with window rankings.",
+                sql: "WITH repo_metadata AS (\n    SELECT repo_id, repo_name, organization, stars_count FROM {{ ref('stg_repos') }}\n),\nissue_aggregates AS (\n    SELECT repo_id, AVG(duration_days_to_close) as avg_issue_close_time_days FROM {{ ref('stg_issues') }} GROUP BY repo_id\n),\nhealth_scoring AS (\n    SELECT ...,\n    ROUND(0.40 * issue_velocity_score + 0.35 * commit_cadence_score + 0.25 * community_score, 2) AS health_score\n)\nSELECT repo_id, repo_name, health_score, health_grade,\n       DENSE_RANK() OVER (ORDER BY health_score DESC) AS ecosystem_health_rank\nFROM health_scoring;"
+            },
+            'repo_commits_masked': {
+                title: "governance.repo_commits_masked (VIEW)",
+                desc: "GDPR/CCPA compliant privacy view masking personal author emails and names while preserving cryptographic MD5 pseudonym keys for contributor analysis.",
+                sql: "{{ config(materialized='view', schema='governance') }}\nSELECT\n    commit_sha,\n    repo_id,\n    {{ mask_name('author_name') }} AS author_name_masked,\n    {{ mask_email('author_email') }} AS author_email_masked,\n    {{ hash_pseudonym('author_email') }} AS author_pseudonym_id,\n    commit_message,\n    commit_date\nFROM {{ ref('stg_commits') }};"
+            },
+            'stg_issues': {
+                title: "staging.stg_issues (VIEW)",
+                desc: "Source-aligned view cleaning raw issues and pull requests, and deriving resolution turnaround in hours and days.",
+                sql: "SELECT\n    issue_id,\n    repo_id,\n    is_pull_request,\n    CASE WHEN closed_at IS NOT NULL\n         THEN ROUND(EXTRACT(EPOCH FROM (closed_at - created_at)) / 86400.0, 2)\n    END AS duration_days_to_close\nFROM {{ source('raw', 'raw_issues') }};"
+            },
+            'stg_repos': {
+                title: "staging.stg_repos (VIEW)",
+                desc: "Source-aligned view standardizing repository metadata and computing repository age and push freshness.",
+                sql: "SELECT\n    repo_id,\n    TRIM(name) AS repo_name,\n    stars_count,\n    ROUND(EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - created_at)) / 86400.0, 1) AS repo_age_days\nFROM {{ source('raw', 'raw_repos') }};"
+            },
+            'stg_commits': {
+                title: "staging.stg_commits (VIEW)",
+                desc: "Source-aligned view cleaning commit logs and tagging personal emails and author names with `pii: true` in YAML metadata.",
+                sql: "SELECT\n    commit_sha,\n    repo_id,\n    LOWER(TRIM(author_email)) AS author_email,\n    commit_date\nFROM {{ source('raw', 'raw_commits') }};"
+            },
+            'raw_repos': {
+                title: "raw.raw_repos (Postgres Table)",
+                desc: "Raw repository metadata ingested via GitHub REST API /repos/{owner}/{repo}.",
+                sql: "-- Populated via Airflow Task: extract_and_load_raw_github\nSELECT * FROM raw.raw_repos;"
+            },
+            'raw_issues': {
+                title: "raw.raw_issues (Postgres Table)",
+                desc: "Raw issues and pull requests ingested via GitHub REST API /repos/{owner}/{repo}/issues.",
+                sql: "-- Populated via Airflow Task: extract_and_load_raw_github\nSELECT * FROM raw.raw_issues;"
+            },
+            'raw_commits': {
+                title: "raw.raw_commits (Postgres Table)",
+                desc: "Raw commit history ingested via GitHub REST API /repos/{owner}/{repo}/commits.",
+                sql: "-- Populated via Airflow Task: extract_and_load_raw_github\nSELECT * FROM raw.raw_commits;"
+            },
+            'repo_health_llm_summary': {
+                title: "analytics.repo_health_llm_summary (Postgres Table)",
+                desc: "Executive 2-line engineering velocity summaries and operational recommendations generated by Google Gemini 2.5 Flash.",
+                sql: "-- Generated via Airflow Task: generate_llm_health_summaries\nSELECT repo_name, health_score, executive_summary, operational_risk\nFROM analytics.repo_health_llm_summary;"
+            }
+        };
 
-        <div class="graph-columns">
-            <!-- Stage 1: Sources -->
-            <div class="stage-column">
-                <div class="node-card source">
-                    <div class="node-tag"><span>Source</span> <span>Postgres</span></div>
-                    <div class="node-name">raw.raw_repos</div>
-                    <div class="node-desc">Raw GitHub repository metadata (stars, forks, open issues).</div>
-                </div>
-                <div class="node-card source">
-                    <div class="node-tag"><span>Source</span> <span>Postgres</span></div>
-                    <div class="node-name">raw.raw_issues</div>
-                    <div class="node-desc">Raw issues & PRs with created_at and closed_at timestamps.</div>
-                </div>
-                <div class="node-card source">
-                    <div class="node-tag"><span>Source</span> <span>Postgres</span></div>
-                    <div class="node-name">raw.raw_commits</div>
-                    <div class="node-desc">Raw commit log with commit author, email & timestamps.</div>
-                </div>
-            </div>
+        function switchGraph(mode) {
+            const gH = document.getElementById('graph-h');
+            const gV = document.getElementById('graph-v');
+            const btnH = document.getElementById('btn-h');
+            const btnV = document.getElementById('btn-v');
 
-            <!-- Connector 1 -->
-            <div class="connector-col">
-                <div class="connector-arrow">
-                    <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                </div>
-            </div>
+            if (mode === 'v') {
+                gH.style.display = 'none';
+                gV.style.display = 'flex';
+                btnV.classList.add('active');
+                btnH.classList.remove('active');
+            } else {
+                gH.style.display = 'flex';
+                gV.style.display = 'none';
+                btnH.classList.add('active');
+                btnV.classList.remove('active');
+            }
+        }
 
-            <!-- Stage 2: Staging Models -->
-            <div class="stage-column">
-                <div class="node-card staging">
-                    <div class="node-tag"><span>Model (View)</span> <span>Staging</span></div>
-                    <div class="node-name">stg_repos</div>
-                    <div class="node-desc">1:1 clean repository attributes with age & freshness metrics.</div>
-                    <div class="test-pill">✓ unique, not_null</div>
-                </div>
-                <div class="node-card staging">
-                    <div class="node-tag"><span>Model (View)</span> <span>Staging</span></div>
-                    <div class="node-name">stg_issues</div>
-                    <div class="node-desc">Calculates turnaround duration (hours & days) and PR separation.</div>
-                    <div class="test-pill">✓ unique, not_null, accepted_values</div>
-                </div>
-                <div class="node-card staging">
-                    <div class="node-tag"><span>Model (View)</span> <span>Staging</span></div>
-                    <div class="node-name">stg_commits</div>
-                    <div class="node-desc">Standardizes Git authors with tagged PII fields.</div>
-                    <div class="test-pill">✓ unique, not_null, pii: true</div>
-                </div>
-            </div>
+        function showModelDetails(key) {
+            const m = modelsData[key];
+            if (!m) return;
+            document.getElementById('modal-model-title').innerText = m.title;
+            document.getElementById('modal-model-desc').innerText = m.desc;
+            document.getElementById('modal-model-sql').innerText = m.sql;
+            document.getElementById('model-modal').style.display = 'flex';
+        }
 
-            <!-- Connector 2 -->
-            <div class="connector-col">
-                <div class="connector-arrow">
-                    <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                </div>
-            </div>
-
-            <!-- Stage 3: Marts & Governance -->
-            <div class="stage-column">
-                <div class="node-card marts">
-                    <div class="node-tag"><span>Data Product (Table)</span> <span>Analytics</span></div>
-                    <div class="node-name">repo_health_score</div>
-                    <div class="node-desc">Composite 0-100 score (Issue turnaround, Commits, Community) + Window ranks.</div>
-                    <div class="test-pill">✓ not_null, grades, score_bounds</div>
-                </div>
-                <div class="node-card governance">
-                    <div class="node-tag"><span>Governance (View)</span> <span>GDPR</span></div>
-                    <div class="node-name">repo_commits_masked</div>
-                    <div class="node-desc">Masks author email & name, preserving MD5 pseudonym key.</div>
-                    <div class="test-pill">✓ not_null, zero-pii-leak</div>
-                </div>
-            </div>
-
-            <!-- Connector 3 -->
-            <div class="connector-col">
-                <div class="connector-arrow">
-                    <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                </div>
-            </div>
-
-            <!-- Stage 4: GenAI / LLM Layer -->
-            <div class="stage-column">
-                <div class="node-card llm">
-                    <div class="node-tag"><span>GenAI Insights</span> <span>LLM</span></div>
-                    <div class="node-name">repo_health_llm_summary</div>
-                    <div class="node-desc">Executive 2-line engineering velocity synthesis & operational risk assessment.</div>
-                    <div class="test-pill">✓ Gemini 2.5 Flash / Claude</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Data Product Schema Catalog -->
-    <div class="catalog-section">
-        <div class="catalog-header">
-            <div class="catalog-title">Catalog Specification: <code>analytics.repo_health_score</code></div>
-            <span class="badge badge-tests">Materialized: TABLE</span>
-        </div>
-        <div class="table-responsive">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Column Name</th>
-                        <th>Data Type</th>
-                        <th>Description</th>
-                        <th>Tests & Constraints</th>
-                        <th>Tags</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><strong>repo_id</strong></td>
-                        <td><span class="type-badge">BIGINT</span></td>
-                        <td>Primary key: GitHub repository numeric identifier.</td>
-                        <td><span class="test-pill">unique</span> <span class="test-pill">not_null</span></td>
-                        <td>PK</td>
-                    </tr>
-                    <tr>
-                        <td><strong>full_name</strong></td>
-                        <td><span class="type-badge">VARCHAR(255)</span></td>
-                        <td>Full repository slug (e.g. ansible/ansible, openshift/origin).</td>
-                        <td><span class="test-pill">not_null</span></td>
-                        <td>Ident</td>
-                    </tr>
-                    <tr>
-                        <td><strong>health_score</strong></td>
-                        <td><span class="type-badge">NUMERIC(5,2)</span></td>
-                        <td>Weighted score: 40% issue velocity + 35% commit cadence + 25% community.</td>
-                        <td><span class="test-pill">not_null</span> <span class="test-pill">range(0,100)</span></td>
-                        <td>Metric</td>
-                    </tr>
-                    <tr>
-                        <td><strong>health_grade</strong></td>
-                        <td><span class="type-badge">VARCHAR(10)</span></td>
-                        <td>Standardized grade tier (A+, A, B, C, Needs Attention).</td>
-                        <td><span class="test-pill">accepted_values</span></td>
-                        <td>Dimension</td>
-                    </tr>
-                    <tr>
-                        <td><strong>ecosystem_health_rank</strong></td>
-                        <td><span class="type-badge">INTEGER</span></td>
-                        <td>Window function: DENSE_RANK() OVER (ORDER BY health_score DESC).</td>
-                        <td><span class="test-pill">not_null</span></td>
-                        <td>Window</td>
-                    </tr>
-                    <tr>
-                        <td><strong>author_email_masked</strong></td>
-                        <td><span class="type-badge">VARCHAR(255)</span></td>
-                        <td>Governed view: Preserves domain while masking mailbox (v***h@redhat.com).</td>
-                        <td><span class="test-pill">not_null</span></td>
-                        <td><span class="tag-pii">PII MASKED</span></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
+        function closeModelModal(event) {
+            document.getElementById('model-modal').style.display = 'none';
+        }
+    </script>
 </body>
 </html>

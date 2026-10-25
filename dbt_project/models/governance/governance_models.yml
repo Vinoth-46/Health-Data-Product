@@ -1,0 +1,35 @@
+version: 2
+
+models:
+  - name: repo_commits_masked
+    description: "GDPR/CCPA-compliant analytical view masking Git committer & author PII while preserving aggregate pseudonymized keys."
+    columns:
+      - name: commit_sha
+        description: "Unique commit SHA-1 hash."
+        tests:
+          - unique
+          - not_null
+      - name: repo_id
+        description: "Foreign key reference to repository."
+        tests:
+          - not_null
+      - name: author_name_masked
+        description: "Masked author name showing only first/last initial (e.g. J***e)."
+        tests:
+          - not_null
+      - name: author_email_masked
+        description: "Masked author email preserving domain for ecosystem attribution without personal exposure (e.g. a***t@redhat.com)."
+        tests:
+          - not_null
+      - name: author_pseudonym_id
+        description: "Deterministic MD5 hash of author email enabling contributor cohort analysis without exposing plain-text PII."
+        tests:
+          - not_null
+      - name: committer_name_masked
+        description: "Masked committer name."
+      - name: committer_email_masked
+        description: "Masked committer email."
+      - name: commit_date
+        description: "Timestamp when the commit occurred."
+        tests:
+          - not_null

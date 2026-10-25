@@ -1,0 +1,124 @@
+name: Production CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-unit-tests:
+    name: Code Quality & Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 pytest sqlfluff requests pydantic
+
+      - name: Run Python linter (flake8)
+        run: |
+          flake8 airflow/ tests/ --max-line-length=120
+
+      - name: Run SQL linter (SQLFluff)
+        run: |
+          sqlfluff lint dbt_project/models/ --dialect postgres
+
+      - name: Run Pytest test suite
+        run: |
+          pytest tests/ -v
+
+  dbt-pipeline-validation:
+    name: dbt Staging, Marts & Governance Test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: analytics_dw
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dbt & pipeline dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install dbt-core dbt-postgres psycopg2-binary requests pydantic
+
+      - name: Initialize PostgreSQL schemas
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -d analytics_dw -c "CREATE SCHEMA IF NOT EXISTS raw;"
+          psql -h localhost -U postgres -d analytics_dw -c "CREATE SCHEMA IF NOT EXISTS staging;"
+          psql -h localhost -U postgres -d analytics_dw -c "CREATE SCHEMA IF NOT EXISTS analytics;"
+          psql -h localhost -U postgres -d analytics_dw -c "CREATE SCHEMA IF NOT EXISTS governance;"
+          psql -h localhost -U postgres -d analytics_dw -f scripts/init_db.sql || true
+
+      - name: Ingest initial dataset for CI
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          ANALYTICS_DB: analytics_dw
+          ANALYTICS_USER: postgres
+          ANALYTICS_PASSWORD: postgres
+        run: |
+          python -c "
+          from airflow.dags.scripts.github_extractor import generate_fallback_mock_data;
+          from airflow.dags.scripts.db_loader import load_repos, load_issues, load_commits, get_db_connection;
+          conn = get_db_connection();
+          r, i, c = generate_fallback_mock_data(['ansible/ansible', 'openshift/origin']);
+          load_repos(r, conn);
+          load_issues(i, conn);
+          load_commits(c, conn);
+          conn.close();
+          "
+
+      - name: Test dbt connection
+        run: |
+          dbt debug --project-dir dbt_project --profiles-dir dbt_project --target ci
+
+      - name: Run dbt staging models
+        run: |
+          dbt run --project-dir dbt_project --profiles-dir dbt_project --target ci --select staging
+
+      - name: Test dbt staging models (not_null & unique)
+        run: |
+          dbt test --project-dir dbt_project --profiles-dir dbt_project --target ci --select staging
+
+      - name: Run dbt aggregate data product & governance models
+        run: |
+          dbt run --project-dir dbt_project --profiles-dir dbt_project --target ci --select marts governance
+
+      - name: Test dbt aggregate data product & governance
+        run: |
+          dbt test --project-dir dbt_project --profiles-dir dbt_project --target ci --select marts governance
+
+      - name: Generate dbt documentation & catalog
+        run: |
+          dbt docs generate --project-dir dbt_project --profiles-dir dbt_project --target ci

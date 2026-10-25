@@ -1,0 +1,111 @@
+version: 2
+
+models:
+  - name: stg_repos
+    description: "Source-aligned 1:1 cleaned view of raw repository metadata with age and freshness calculations."
+    columns:
+      - name: repo_id
+        description: "Primary key: GitHub repository ID."
+        tests:
+          - unique
+          - not_null
+      - name: repo_name
+        description: "Repository short name."
+        tests:
+          - not_null
+      - name: full_name
+        description: "Repository full namespace identifier (e.g. ansible/ansible)."
+        tests:
+          - not_null
+      - name: organization
+        description: "Organization handle (e.g. ansible, openshift, redhat-developer)."
+        tests:
+          - not_null
+      - name: stars_count
+        description: "Total GitHub star count."
+        tests:
+          - not_null
+      - name: forks_count
+        description: "Total repository forks count."
+        tests:
+          - not_null
+      - name: open_issues_count
+        description: "Count of currently open issues."
+        tests:
+          - not_null
+      - name: primary_language
+        description: "Predominant programming language."
+        tests:
+          - not_null
+
+  - name: stg_issues
+    description: "Source-aligned 1:1 cleaned view of raw GitHub issues and PRs with resolution duration."
+    columns:
+      - name: issue_id
+        description: "Primary key: GitHub issue ID."
+        tests:
+          - unique
+          - not_null
+      - name: repo_id
+        description: "Foreign key: references stg_repos.repo_id."
+        tests:
+          - not_null
+      - name: issue_number
+        description: "Issue or Pull Request number in repository context."
+        tests:
+          - not_null
+      - name: state
+        description: "Current issue lifecycle state."
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['open', 'closed']
+      - name: is_pull_request
+        description: "Boolean indicating if the record is a Pull Request."
+        tests:
+          - not_null
+      - name: duration_hours_to_close
+        description: "Calculated duration in hours from creation to close (NULL if still open)."
+      - name: duration_days_to_close
+        description: "Calculated duration in days from creation to close (NULL if still open)."
+
+  - name: stg_commits
+    description: "Source-aligned 1:1 cleaned view of raw commits. Contains tagged PII columns for GDPR governance."
+    columns:
+      - name: commit_sha
+        description: "Primary key: 40-character Git commit hash."
+        tests:
+          - unique
+          - not_null
+      - name: repo_id
+        description: "Foreign key: references stg_repos.repo_id."
+        tests:
+          - not_null
+      - name: author_name
+        description: "Author's name as recorded in Git commit."
+        tags: ["pii"]
+        meta:
+          pii: true
+          classification: "confidential"
+        tests:
+          - not_null
+      - name: author_email
+        description: "Author's email address (Sensitive PII subject to GDPR/CCPA masking)."
+        tags: ["pii"]
+        meta:
+          pii: true
+          classification: "restricted"
+        tests:
+          - not_null
+      - name: committer_email
+        description: "Committer's email address (Sensitive PII)."
+        tags: ["pii"]
+        meta:
+          pii: true
+          classification: "restricted"
+        tests:
+          - not_null
+      - name: commit_date
+        description: "Timestamp when the commit occurred."
+        tests:
+          - not_null

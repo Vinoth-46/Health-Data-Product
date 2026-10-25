@@ -1,0 +1,59 @@
+version: 2
+
+sources:
+  - name: raw
+    database: "{{ env_var('ANALYTICS_DB', 'analytics_dw') }}"
+    schema: raw
+    description: "Raw ingested GitHub data extracted via REST API for Red Hat ecosystem repositories."
+    tables:
+      - name: raw_repos
+        description: "Raw repository metadata extracted from GitHub /repos/{owner}/{repo}."
+        columns:
+          - name: repo_id
+            description: "Unique GitHub numeric repository identifier (Primary Key)."
+          - name: name
+            description: "Repository name."
+          - name: full_name
+            description: "Full repository slug in owner/name format."
+          - name: organization
+            description: "GitHub owner or organization login (e.g. openshift, ansible)."
+          - name: stars_count
+            description: "Total stargazers count."
+          - name: forks_count
+            description: "Total forks count."
+          - name: open_issues_count
+            description: "Total open issues and pull requests reported by GitHub."
+          - name: ingested_at
+            description: "Timestamp when the record was ingested into Postgres."
+
+      - name: raw_issues
+        description: "Raw GitHub issues and pull requests extracted from /repos/{owner}/{repo}/issues."
+        columns:
+          - name: issue_id
+            description: "Unique GitHub numeric issue identifier (Primary Key)."
+          - name: repo_id
+            description: "Foreign key reference to raw_repos.repo_id."
+          - name: issue_number
+            description: "Repository-scoped issue or PR number."
+          - name: state
+            description: "State of the issue ('open' or 'closed')."
+          - name: is_pull_request
+            description: "Boolean flag indicating whether the item is a Pull Request."
+          - name: created_at
+            description: "Timestamp when the issue was created."
+          - name: closed_at
+            description: "Timestamp when the issue was closed (NULL if still open)."
+
+      - name: raw_commits
+        description: "Raw GitHub commit log extracted from /repos/{owner}/{repo}/commits."
+        columns:
+          - name: commit_sha
+            description: "Unique 40-character git commit SHA-1 hash (Primary Key)."
+          - name: repo_id
+            description: "Foreign key reference to raw_repos.repo_id."
+          - name: author_name
+            description: "Git author display name."
+          - name: author_email
+            description: "Git author email address (Sensitive PII)."
+          - name: commit_date
+            description: "Timestamp when the commit was authored or committed."

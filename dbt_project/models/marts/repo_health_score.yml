@@ -1,0 +1,77 @@
+version: 2
+
+models:
+  - name: repo_health_score
+    description: "Enterprise aggregate data product evaluating operational engineering velocity, issue turnaround, commit activity, and community adoption across Red Hat open source repositories."
+    columns:
+      - name: repo_id
+        description: "Primary key: GitHub unique repository ID."
+        tests:
+          - unique
+          - not_null
+      - name: repo_name
+        description: "Repository short name (e.g. ansible, origin, vscode-yaml)."
+        tests:
+          - not_null
+      - name: full_name
+        description: "Full repository namespace identifier."
+        tests:
+          - not_null
+      - name: organization
+        description: "Red Hat organization name (e.g. openshift, ansible, redhat-developer)."
+        tests:
+          - not_null
+      - name: stars_count
+        description: "Current GitHub stargazers count."
+        tests:
+          - not_null
+      - name: forks_count
+        description: "Current GitHub forks count."
+        tests:
+          - not_null
+      - name: avg_issue_close_time_days
+        description: "Mean duration in days to close reported issues."
+        tests:
+          - not_null
+      - name: median_issue_close_time_days
+        description: "Median duration in days to close reported issues."
+        tests:
+          - not_null
+      - name: issue_closure_rate_pct
+        description: "Percentage of issues resolved (0-100%)."
+        tests:
+          - not_null
+      - name: commits_last_30d
+        description: "Total commits authored within the past 30 days."
+        tests:
+          - not_null
+      - name: active_contributors_count
+        description: "Number of unique commit authors contributing to the repository."
+        tests:
+          - not_null
+      - name: health_score
+        description: "Weighted composite health score (0.00 to 100.00) combining issue turnaround (40%), commit cadence (35%), and community scale (25%)."
+        tests:
+          - not_null
+      - name: health_grade
+        description: "Standardized health tier (A+, A, B, C, or Needs Attention)."
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['A+', 'A', 'B', 'C', 'Needs Attention']
+      - name: ecosystem_health_rank
+        description: "Window function: Dense rank across all tracked Red Hat repositories ordered by health_score descending."
+        tests:
+          - not_null
+      - name: health_percentile
+        description: "Window function: Relative percentile ranking within the Red Hat ecosystem."
+        tests:
+          - not_null
+      - name: org_avg_health_score
+        description: "Window function: Partitioned mean health score across the repository's parent organization."
+        tests:
+          - not_null
+      - name: calculated_at
+        description: "Timestamp when the health score model was materialized."
+        tests:
+          - not_null

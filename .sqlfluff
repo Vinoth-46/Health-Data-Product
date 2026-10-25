@@ -1,0 +1,16 @@
+[sqlfluff]
+dialect = postgres
+templater = jinja
+exclude_rules = LT05,AL05,CP01
+max_line_length = 120
+
+[sqlfluff:indentation]
+indent_unit = space
+tab_space_size = 4
+
+[sqlfluff:templater:jinja]
+apply_dbt_builtins = true
+
+[sqlfluff:layout:type:comma]
+spacing_before = touch
+line_position = trailing

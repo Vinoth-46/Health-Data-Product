@@ -1,0 +1,33 @@
+name: 'github_health'
+version: '1.0.0'
+config-version: 2
+
+# Profile defined in profiles.yml
+profile: 'github_health'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+# Model configurations
+models:
+  github_health:
+    staging:
+      +schema: staging
+      +materialized: view
+      +tags: ["staging", "source-aligned"]
+    marts:
+      +schema: analytics
+      +materialized: table
+      +tags: ["marts", "aggregate-data-product"]
+    governance:
+      +schema: governance
+      +materialized: view
+      +tags: ["governance", "compliance", "gdpr"]
